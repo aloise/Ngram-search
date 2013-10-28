@@ -18,7 +18,6 @@ object Application extends Controller {
   implicit val timeout = Timeout(39.seconds)
 
   def index = Action {
-    // Ok(views.html.index("Your new application is ready."))
     Ok("Hello World!")
   }
   
@@ -29,7 +28,9 @@ object Application extends Controller {
     if( !q.isEmpty ){
     	Global.getSearchProvider(field) match {
     	  case Some(actor) => Async{
-              ( actor ? new SearchRowsRequest(query, limit) ).mapTo[SearchRowsResult].map( r => Ok( Json.toJson( r.ids ) ) )
+              ( actor ? new SearchRowsRequest(query, limit) ).
+                  mapTo[SearchRowsResult].
+                  map( r => Ok( Json.toJson( r.ids ) ) )
         }
     	  case None => BadRequest( Json.obj( "error" -> "search_field_was_not_found" ))
     	}

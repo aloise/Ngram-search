@@ -2,13 +2,12 @@ package models
 
 import play.api._
 import scala.collection.JavaConversions._
-import play.Play
 import play.api.Play.current
 import play.api.db.DB
 import anorm._
 import java.text.SimpleDateFormat
 import scala.collection.Traversable
-import play.Configuration
+import play.api.Configuration
 
 
 class Datasource(val config:Configuration) {
@@ -29,12 +28,12 @@ class Datasource(val config:Configuration) {
   /**
    * Returns either a complete update or only updated records from the last update
    */
-  def findAll(getModifiedOnly:Boolean = true):Tuple2[Boolean,Stream[models.Row]] = {
+  def findAll(getModifiedOnly:Boolean = true):(Boolean,Stream[models.Row]) = {
 		orderCounter = 0
 		
 		val additionalConditions = if( iteration == 0 || !getModifiedOnly ) ""
 			else config
-				  	.getStringList("modified", List.empty[String])
+				  	.getStringList("modified")
 				  	.map( "( %s > \"%s\" )".format(_, mysqlDateFormat.format( lastUpdateTimestamp )) )
 				  	.mkString(" OR ")
 		
@@ -51,18 +50,18 @@ class Datasource(val config:Configuration) {
 
   private def buildQuery(condition:String = ""):String = {
     
-    val configWhere = if( config.getString("conditions","").isEmpty() ) List() else List(config.getString("conditions","") )
+    val configWhere = config.getString("conditions").map( List(_) ).getOrElse(List())
     
     val conditions:List[String]  =  if( condition.isEmpty ) configWhere else configWhere ++ List(condition)
     
-    val defaultFields:Seq[String] = Seq(config.getString("id", "id"), config.getString("text","name"))
+    val defaultFields:Seq[String] = Seq(config.getString("id").getOrElse("id"), config.getString("text").getOrElse("name"))
     
     val fields = defaultFields
     
     val q = "SELECT "+fields.mkString(", ") + 
-    		" FROM " + config.getString("table", "table") +
+    		" FROM " + config.getString("table").getOrElse("table") +
     		( if( conditions.isEmpty ) "" else " WHERE " + conditions.mkString(" AND ") ) +
-    		( if( config.getString("order", "").isEmpty ) "" else " ORDER BY "+config.getString("order", "") )
+    		config.getString("order").map( " ORDER BY "+_ ).getOrElse("")
     // println(q)
     q
     
@@ -106,11 +105,7 @@ class Datasource(val config:Configuration) {
   }
   
   def hasCleanTextOption:Boolean = {
-    config.getBoolean("clean_text",  false)
+    config.getBoolean("clean_text").getOrElse(false)
   }
-  
-}
-
-object Datasource {
   
 }
