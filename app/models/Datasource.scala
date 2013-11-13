@@ -8,6 +8,7 @@ import anorm._
 import java.text.SimpleDateFormat
 import scala.collection.Traversable
 import play.api.Configuration
+import java.io.Serializable
 
 
 class Datasource(val config:Configuration) {
@@ -34,8 +35,9 @@ class Datasource(val config:Configuration) {
 		val additionalConditions = if( iteration == 0 || !getModifiedOnly ) ""
 			else config
 				  	.getStringList("modified")
-				  	.map( "( %s > \"%s\" )".format(_, mysqlDateFormat.format( lastUpdateTimestamp )) )
-				  	.mkString(" OR ")
+				  	.map( _.map( "( %s > \"%s\" )".format(_, mysqlDateFormat.format( lastUpdateTimestamp )) ).mkString(" OR ") )
+            .getOrElse("")
+
 		
 		iteration += 1
 		
@@ -62,7 +64,7 @@ class Datasource(val config:Configuration) {
     		" FROM " + config.getString("table").getOrElse("table") +
     		( if( conditions.isEmpty ) "" else " WHERE " + conditions.mkString(" AND ") ) +
     		config.getString("order").map( " ORDER BY "+_ ).getOrElse("")
-    // println(q)
+    println(q)
     q
     
   }

@@ -21,7 +21,7 @@ object Application extends Controller {
     Ok("Hello World!")
   }
   
-  def search(field:String,query:String, limit:Int = 1000) = Action {
+  def search(field:String, query:String, limit:Int = 1000) = Action {
     
     val q = query.trim.toLowerCase
     

@@ -5,14 +5,14 @@ import play.Project._
 object ApplicationBuild extends Build {
 
   val appName         = "abc-ngram-search"
-  val appVersion      = "0.5-SNAPSHOT"
+  val appVersion      = "0.6-SNAPSHOT"
 
   val appDependencies = Seq(
     // Add your project dependencies here,
     jdbc,
     anorm,
-    "mysql" % "mysql-connector-java" % "5.1.21",
-    "org.squeryl" %% "squeryl" % "0.9.+"
+    "mysql" % "mysql-connector-java" % "5.1.21"
+//    "org.squeryl" %% "squeryl" % "0.9.+"
   )
 
 
