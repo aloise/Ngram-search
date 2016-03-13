@@ -12,31 +12,32 @@ import scala.concurrent.Future
 import akka.util.Timeout
 import scala.concurrent.duration._
 
-object Application extends Controller {
+class Application extends Controller {
 
   // search timeout
-  implicit val timeout = Timeout(39.seconds)
+  implicit val timeout = Timeout(60.seconds)
 
   def index = Action {
     Ok("Hello World!")
   }
   
-  def search(field:String, query:String, limit:Int = 1000) = Action {
+  def search(field:String, query:String, limit:Int = 1000) = Action.async { request =>
     
     val q = query.trim.toLowerCase
     
     if( !q.isEmpty ){
     	Global.getSearchProvider(field) match {
-    	  case Some(actor) => Async{
-              ( actor ? new SearchRowsRequest(query, limit) ).
-                  mapTo[SearchRowsResult].
-                  map( r => Ok( Json.toJson( r.ids ) ) )
-        }
-    	  case None => BadRequest( Json.obj( "error" -> "search_field_was_not_found" ))
-    	}
+        case Some(actor) =>
+          actor.ask(SearchRowsRequest(query, limit))(timeout).
+            mapTo[SearchRowsResult].
+            map(r => Ok(Json.toJson(r.ids)))
+
+        case None =>
+          Future.successful(BadRequest(Json.obj("error" -> "search_field_was_not_found")))
+      }
     	
     } else {
-      BadRequest(Json.obj( "error" -> "search_string_is_empty"))
+      Future.successful( BadRequest(Json.obj( "error" -> "search_string_is_empty")) )
     }
     
 

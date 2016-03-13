@@ -22,7 +22,7 @@ class Datasource(val config:Configuration) {
   private var autoIncrementId:Int = 0
   private var orderCounter:Int = 0
   
-  implicit val connection = DB.getConnection()
+  implicit lazy val connection = DB.getConnection()
   
   def getIteration = iteration
   
@@ -64,22 +64,22 @@ class Datasource(val config:Configuration) {
     		" FROM " + config.getString("table").getOrElse("table") +
     		( if( conditions.isEmpty ) "" else " WHERE " + conditions.mkString(" AND ") ) +
     		config.getString("order").map( " ORDER BY "+_ ).getOrElse("")
-    println(q)
+
     q
     
   }
   
-  private def mapToRow(row:anorm.SqlRow):models.Row = {
+  private def mapToRow(row:anorm.Row):models.Row = {
 	  val rowList = row.asList
 	  
-	  val id = rowList(0) match { 
+	  val id = rowList.head match {
 	    case Some(s:String) => s.toInt
 	    case s:String => s.toInt
 	    case i:Int => i
-	    case _ => { 
+	    case _ =>
 	      autoIncrementId+=1
 	      autoIncrementId 
-	    } 
+
 	  }
 	  val value = rowList(1) match { 
 	    case Some(s:String) => if( hasCleanTextOption ) Row.cleanText( s ) else ""
