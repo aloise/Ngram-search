@@ -2,6 +2,7 @@ package actors
 
 import akka.actor.{ActorRef, Props, Actor}
 import actors.messages._
+import akka.event.slf4j.Logger
 import global.Global
 import models.{Datasource, Row}
 import scala.concurrent.duration._
@@ -17,15 +18,6 @@ import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
 
 
-/*class SearchDatasetActionProcessorActor(val searchContainer:SearchDataContainer) extends Actor {
-	def receive = {
-	  case InsertRowAction(row:Row) => searchContainer.addRow(row)
-	  case UpdateRowAction(row:Row) => searchContainer.updateRow(row)
-	  case DeleteRowAction(row:Row) => searchContainer.removeRow(row)
-	  case DeleteRowAction(rowId:Int) => searchContainer.removeRowById(rowId)
-	  case RemoveRowsFromIteration(iteration:Int) => searchContainer.removeRowsFromIteration(iteration)
-	}
-}*/
 
 class SearchProcessorActor(val name:String, val datasource:Datasource) extends Actor{
 
@@ -40,17 +32,17 @@ class SearchProcessorActor(val name:String, val datasource:Datasource) extends A
   override def preStart() = {
 
     if( updateInterval.toSeconds > 0 ){
-      Akka.system.scheduler.schedule( updateInterval, updateInterval)( updateIntervalFired(true) )
+      context.system.scheduler.schedule( updateInterval, updateInterval)( updateIntervalFired(true) )
     }
 
     if(fullUpdateInterval.toSeconds > 0){
-      Akka.system.scheduler.schedule( initialLoadDuration, fullUpdateInterval)( updateIntervalFired(false) )
+      context.system.scheduler.schedule( initialLoadDuration, fullUpdateInterval)( updateIntervalFired(false) )
     }
   }
 
   def updateIntervalFired(getModifiedOnly:Boolean = true):Unit = {
 
-    println("Update iteration: "+name+" (" + ( if(getModifiedOnly) "partial" else "full" ) + ") - " + datasource.getIteration)
+    // Logger.debug("Update iteration: "+name+" (" + ( if(getModifiedOnly) "partial" else "full" ) + ") - " + datasource.getIteration)
 
     try {
       val currentIteration = datasource.getIteration
@@ -178,7 +170,7 @@ class SearchDataContainer(datasource:Datasource) {
     val items = // nGramHashToRowMapping synchronized {
       Row.getNGrams(search, nGramLength )
         .map( (nGramHash) => nGramHashToRowMapping.get(nGramHash) ) // find all companies with word n-grams
-        .filter( !_.isEmpty ) // filter empty matches
+        .filter( _.isDefined ) // filter empty matches
         .map( _.get ) // get a set of row Ids
     // }
 
@@ -193,7 +185,7 @@ class SearchDataContainer(datasource:Datasource) {
         .filter( getRow(_).exists(  _.contains(search) ) )
         .toSeq
         .map( getRow )
-        .filter( !_.isEmpty )
+        .filter( _.isDefined )
         .map( _.get )
         .sortWith( ( row1:Row, row2:Row) => row1.compareTo(row2) )
         .take(limit)
